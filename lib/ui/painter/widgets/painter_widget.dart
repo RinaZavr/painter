@@ -12,44 +12,41 @@ class _PainterWidgetState extends State<PainterWidget> {
   // Offset? start;
   // Offset? end;
   bool isDraw = false;
-  List<List<Offset>> points = [[]];
-  int count = 0;
+  // List<List<Offset>> points = [[]];
+  List<Offset> points = [];
   Offset? painterOffset;
-  bool isFirstPoint = false;
+  bool isLastPoint = false;
   List<Widget> dots = [];
+  int curIndex = 0;
+  bool isDrag = false;
+
+  // LinePainter painter = LinePainter();
 
   @override
   Widget build(BuildContext context) {
-    print('count: $count');
-    return Listener(
-      onPointerDown: (event) {
-        // points.add([]);
-        // if (points[count].isEmpty) {
-        if(isFirstPoint == false) {
-          setState(() {
-            points[count].add(event.position);
-            painterOffset = event.position;
-            isDraw = true;
-            isFirstPoint = true;
-            dots.add(addButton(event.position));
-            if(points.isNotEmpty && points[count].isNotEmpty) print('offset: ${points[count]}');
-          });
-        } else {
-          setState(() {
-            points[count].add(event.position);
-            dots.add(addButton(event.position));
-            painterOffset = event.position;
-            if(points.isNotEmpty && points[count].isNotEmpty) print('offset: ${points[count]}');
-            count++;
-            points.add([]);
-            points[count].add(points[count-1][1]);
-            if(points.isNotEmpty && points[count].isNotEmpty) print('offset: ${points[count]}');
-          });
-        }
-      },
-      child: Stack(
-        children: [
-          Container(
+    return Stack(
+      children: [
+        Listener(
+          onPointerDown: (event) {
+            if (isLastPoint == false) {
+              setState(() {
+                points.add(event.position);
+                painterOffset = event.position;
+                isDraw = true;
+                dots.add(addButton(points.length - 1));
+                curIndex = points.length - 1;
+                if (points.length > 2 &&
+                    (points.first.dx - points.last.dx).abs() < 20 &&
+                    (points.first.dy - points.last.dy).abs() < 20) {
+                  painterOffset = points.first;
+                  dots.remove(dots.last);
+                  curIndex = 0;
+                  isLastPoint = true;
+                }
+              });
+            }
+          },
+          child: Container(
             width: MediaQuery.of(context).size.width,
             height: MediaQuery.of(context).size.height,
             decoration: const BoxDecoration(
@@ -62,39 +59,65 @@ class _PainterWidgetState extends State<PainterWidget> {
             ),
             child: CustomPaint(
               painter: LinePainter(
-                points: points),
+                points: points,
+              ),
             ),
           ),
-          if(dots.isNotEmpty)
-            for(Widget dot in dots)
-              dot,
-          if (isDraw && painterOffset != null)
-            Positioned(
-              left: painterOffset!.dx - 20,
-              top: painterOffset!.dy - 20,
+        ),
+        if (dots.isNotEmpty)
+          for (Widget dot in dots) dot,
+        if (isDraw && painterOffset != null)
+          Positioned(
+            left: painterOffset!.dx - 20,
+            top: painterOffset!.dy - 20,
+            child: GestureDetector(
+              onLongPressMoveUpdate: (details) {
+                setState(() {
+                  painterOffset = details.globalPosition;
+                  points[curIndex] = details.globalPosition;
+                  dots[curIndex] = addButton(curIndex);
+                });
+              },
               child: Image.asset('assets/painter.png'),
             ),
-        ],
-      ),
+          ),
+      ],
     );
   }
 
-  Widget addButton(Offset point) {
+  Widget addButton(
+      // Offset point,
+      int index) {
     // if(points.isNotEmpty) {
     //   for (int i = 0; i < points.length; i++) {
     //     if(points[i].isNotEmpty) {
-          // dots.add(
-            return Positioned(
-              left: point.dx - 8,
-              top: point.dy - 8,
-              child: Image.asset(
-                'assets/dot.png',
-              )
-            );
-          // );
+    // dots.add(
+    return Positioned(
+        left: points[index].dx - 8,
+        top: points[index].dy - 8,
+        // left: point.dx - 8,
+        // top: point.dy - 8,
+        child: GestureDetector(
+          onTap: () {
+            setState(() {
+              // painterOffset = Offset(point.dx - 3, point.dy - 3);
+              painterOffset =
+                  Offset(points[index].dx - 3, points[index].dy - 3);
+              curIndex = index;
+            });
+          },
+          child: Image.asset(
+            'assets/dot.png',
+          ),
+        ));
+    // );
     //     }
     //   }
     // }
     // return dots;
   }
+
+  // dragButton() {
+  //   dots[curIndex] = addButton(curIndex);
+  // }
 }
